@@ -59,7 +59,7 @@ adata_rar<-rarefy_even_depth(adata, sample.size=min(sample_sums(adata)), rngseed
 #data frame of variables and diversity data for animal samples
 adf<-cbind(sample_data(adata), sample_sums(adata), estimate_richness(adata))
 names(adf)[names(adf)=="sample_sums(adata)"]<-"totalreads"
-adf$rrich<-estimate_richness(adata_rar)$Observed #adding species richness measure based on rarefaction
+adf$rrich<-estimate_richness(adata_rar, measures="Observed")$Observed #adding species richness measure based on rarefaction
 adf$clone=factor(adf$clone, 
                  levels=c("TR-EG-1", "BE-OHZ-T10", 
                           "ES-DO1-1", "F2-82", "DE-K35-Mu10", 
@@ -70,6 +70,8 @@ adf$clone=factor(adf$clone,
 mud<-subset_samples(data, sampletype=="mud")
 mud_df<-cbind(sample_data(mud), estimate_richness(mud, measures="Observed"))
 mud_df$sedtype<-factor(mud_df$sedtype, labels=c("Autoclaved", "Natural"))
+mud_rar<-rarefy_even_depth(mud, sample.size=min(sample_sums(mud)), rngseed=3, replace=FALSE)
+plot_bar(subset_samples(mud_rar, seddate=="start"), fill="Class") + theme(legend.text=element_text(size=8))
 #Figure S4
 sediment_sample_richness<-plot(Observed~sedtype, mud_df, xlab="Sediment type", ylab="Bacterial species richness")
 
@@ -104,7 +106,7 @@ summary<-ddply(adf, .(clone, clonerank, cloneavgbehavior, treatment), summarise,
                InvSimp=mean(InvSimpson), Shan=mean(Shannon), rich=mean(rrich), 
                trtbeh_se=sd(behavior, na.rm=TRUE)/sqrt(n), 
                simp_se=sd(InvSimpson)/sqrt(n), shan_se=sd(Shannon)/sqrt(n), 
-               rich_se=sd(rrich)/sqrt(n))
+               rich_se=sd(rrich)/sqrt(n), median_shan=median(Shannon))
 #order clones by increasing average behavior
 summary$clone<-factor(summary$clone, levels=c("TR-EG-1", "BE-OHZ-T10", "ES-DO1-1", "F2-82", "DE-K35-Mu10", "BE-WE-G59", "IXF1", "NO-V-7", "DE-KA-F28", "CZ-N2-6", "CZ-N1-1", "F2-918"))
 
@@ -124,6 +126,19 @@ clone_diversity_plot_shan<-ggplot(summary, aes(x=clone, y=Shan, color=treatment)
   theme(axis.text.x=element_text(angle=90), legend.position=c(0.07,0.15)) + labs(y="Shannon Index +/- s.e.m.")
 #Figure S5
 clone_diversity_plot_supplement<-plot_grid(clone_diversity_plot_rrich, clone_diversity_plot_simp, labels=c("A","B"), nrow=2)
+
+#alpha diversity measurements by clone and treatment - boxplots
+clone_diversity_plot_shan_box<-ggplot(adf, aes(x=clone, y=Shannon, color=treatment))+geom_point(stat="identity", position=position_dodge(width=0.9)) +
+  theme_bw() + scale_y_continuous(limits=c(0,3)) + scale_color_manual(values=c("gray","#E69F00","#56B4E9")) +
+  geom_boxplot(position=position_dodge(), alpha=0) +
+  geom_point(position=position_jitterdodge())+
+  geom_vline(xintercept=c(1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5), size=0.2) +
+  theme(axis.text.x=element_text(angle=90), legend.position=c(0.05,0.1)) + labs(y="Shannon Index +/- s.e.m.")
+treatment_diversity_plot_shan_box<-ggplot(adf, aes(x=treatment, y=Shannon, color=treatment))+geom_point(stat="identity", position=position_dodge(width=0.9)) +
+  theme_bw() + scale_y_continuous(limits=c(0,3)) + scale_color_manual(values=c("gray","#E69F00","#56B4E9")) +
+  geom_boxplot(position=position_dodge(), alpha=0) +
+  geom_point(position=position_jitterdodge())+
+  theme(axis.text.x=element_text(angle=90), legend.position=c(0.05,0.1)) + labs(y="Shannon Index +/- s.e.m.")
 
 #treatment, clone and size
 size_clntrt<-aov(size~clone*treatment, adf)
@@ -145,7 +160,7 @@ diffs$ShanNet <- summary_ns[summary_ns$treatment== "NET", ][match(diffs$clone, s
 diffs$ShanSed <- summary_ns[summary_ns$treatment== "SED", ][match(diffs$clone, summary_ns[summary_ns$treatment== "SED", ]$clone), 8]
 diffs$shandiff<-diffs$ShanSed-diffs$ShanNet
 
-d<-ggplot(diffs, aes(x=cloneavgbehavior, y=shandiff, label=clone)) + theme_bw() + geom_point() + 
+d<-ggplot(diffs, aes(x=cloneavgbehavior, y=shandiff, label=clone)) + theme_bw(base_size = 14) + geom_point() + 
   labs(x="Clonal mean browsing intensity", y="Mean SED-Mean NET Shannon index difference") 
 diffs_lm<-lm(shandiff~cloneavgbehavior, diffs)
 
@@ -156,8 +171,8 @@ agg_plot_shan <- ggplot(summary_ns, aes(x=trtbeh, y=Shan, color=treatment), ymin
   geom_point(position=position_jitter(), stat="identity") +
   geom_errorbar(aes(ymin=(Shan-shan_se),ymax=(Shan+shan_se))) + 
   geom_errorbarh(aes(xmin=(trtbeh-trtbeh_se), xmax=(trtbeh+trtbeh_se))) + 
-  geom_label_repel(aes(label=clone)) +
-  labs(x="Behavior +/- s.e.m", y="Shannon Index +/- s.e.m.") +
+  geom_label_repel(aes(label=clone)) + theme_bw(base_size=14) +
+  labs(x="Browsing intensity +/- s.e.m", y="Shannon Index +/- s.e.m.") +
   theme(legend.position=c(.1,.8)) 
 #without labels
 agg_plot_shan1 <- ggplot(summary_ns, aes(x=trtbeh, y=Shan, color=treatment), ymin=0) + 
@@ -167,7 +182,7 @@ agg_plot_shan1 <- ggplot(summary_ns, aes(x=trtbeh, y=Shan, color=treatment), ymi
   geom_point(position=position_jitter(), stat="identity") +
   geom_errorbar(aes(ymin=(Shan-shan_se),ymax=(Shan+shan_se))) + 
   geom_errorbarh(aes(xmin=(trtbeh-trtbeh_se), xmax=(trtbeh+trtbeh_se))) + 
-  labs(x="Behavior +/- s.e.m", y="Shannon Index +/- s.e.m.") +
+  labs(x="Browsing intensity +/- s.e.m", y="Shannon Index +/- s.e.m.") +
   theme(legend.position=c(.1,.8)) 
 
 #Fig 4
@@ -252,7 +267,8 @@ autsed_ordinate_all<-plot_ordination(adata_autsed_hell, ordi, type="samples", co
 autsed_ordinate<-plot_ordination(adata_autsed_hell, ordi, type="samples", color="treatment") + 
   scale_color_manual(values=c("gray","#56B4E9")) + theme_bw() + facet_wrap(~clone) + theme(legend.position="none")
 ordination_figure<-plot_grid(autsed_ordinate_all, autsed_ordinate, labels=c("A","B"), nrow=2)
-
+#biplot
+p<-plot_ordination(adata_autsed_hell, ordi, type="split", color="Phylum", shape="treatment")
 
 #Adonis comparison, stratified by batch
 autsed_bray_adonis<-adonis(adata_autsed_hell_bray~treatment*clone, adf_as, strata=adf_as$pcr_batch)
@@ -265,7 +281,7 @@ permutest(disp_clone)
 TukeyHSD(disp_clone)
 
 #Examining the contribution of environmental bacteria to microbiota
-library("DESeq2") #1.18.1
+library("DESeq2") #1.10.1
 seddata<-subset_samples(data, sampletype=="mud")
 seddata<-subset_samples(seddata, seddate=="start")
 seddata<-subset_taxa(seddata, taxa_sums(seddata)>0)
@@ -279,7 +295,6 @@ head(sigtab)
 res<-sigtab[order(-sigtab$log2FoldChange),]
 topsedtaxa<-rownames(res[1:10,])
 #the top 10 OTUs overrepresented in natural sediment
-
 sedtaxa.8fold<-rownames(sigtab[sigtab$log2FoldChange > 8,])
 sedtaxa.5fold<-rownames(sigtab[sigtab$log2FoldChange > 5,])
 sedtaxa.10fold<-rownames(sigtab[sigtab$log2FoldChange > 10,])
@@ -293,15 +308,15 @@ autsednum<-sample_sums(adata.autsedtaxa)
 adf$sedreads<-sednum
 adf$sedprop<-adf$sedreads/adf$totalreads
 adf$sedproprar<-sample_sums(adata.rar.sedtaxa)/min(sample_sums(adata))
-adf$sedtaxrich<-estimate_richness(adata.sedtaxa)$Observed
-adf$sedtaxrich.rar<-estimate_richness(adata.rar.sedtaxa)$Observed
+adf$sedtaxrich<-estimate_richness(adata.sedtaxa, measures="Observed")$Observed
+adf$sedtaxrich.rar<-estimate_richness(adata.rar.sedtaxa, measures="Observed")$Observed
 adf$autsedreads<-autsednum
 adf$autprop<-adf$autsedreads/adf$totalreads
 
 max(adata_otus_nsamples[sedtaxa.8fold], na.rm=TRUE)
 median(adata_otus_nsamples[sedtaxa.8fold], na.rm=TRUE) #looking at how many animal samples sediment-derived bacteria tend to be found in
 
-#Figure S7
+#Figure S7b (a and c are the same but using seprop with 5fold or 10fold)
 prop<-ggplot(adf, aes(x=behavior, y=sedprop, color=treatment)) + 
   geom_point() + scale_color_manual(values=c("gray","#E69F00","#56B4E9")) + theme_bw() +
   stat_smooth(method=lm) +
@@ -322,8 +337,8 @@ prop_bar<-ggplot(prop_sum, aes(x=clone, y=proportion, fill=treatment)) +
   labs(y="Proportion sediment-derived bacteria")
 
 prop_box<-ggplot(adf, aes(x=clone, y=sedprop, color=treatment)) + 
-  geom_point(position=position_jitterdodge(), size=0.25) + 
-  geom_boxplot(outlier.size=0) +
+  geom_point(position=position_jitterdodge()) + 
+  geom_boxplot(outlier.size=0, alpha=0) +
   theme_bw() +
   scale_color_manual(values=c("gray","#E69F00","#56B4E9")) + 
   theme(axis.text.x=element_text(angle=90), legend.position=c(0.1,0.8)) + geom_vline(xintercept=c(1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5), size=0.1) +
@@ -384,7 +399,7 @@ prop_i<-ggplot(adf, aes(x=behavior, y=sedprop, color=treatment)) +
 
 #metacoder for creating taxonomic heat trees
 devtools::install_github("ropensci/taxa")
-devtools::install_github("grunwaldlab/metacoder")
+devtools::install_github("grunwaldlab/metacoder/")
 library(metacoder) #0.2.0.9012 # https://github.com/grunwaldlab/metacoder
 obj<-parse_phyloseq(adata)
 
@@ -418,3 +433,41 @@ ht_SED<-heat_tree(obj,
                   node_color_axis_label = "Median proportion")
 
 ttrees<-plot_grid(ht_AUT, ht_NET, ht_SED, labels=c("AUT","NET", "SED"), nrow=3)
+
+#Speculating: do SED-specific bacterial taxa outcompete "native" microbiota?
+#Which taxa are different between AUT and SED animals?
+adata_autsed<-subset_samples(adata, treatment!="NET")
+adata_autsed<-subset_taxa(adata_autsed, taxa_sums(adata_autsed)>0)
+animaldiff <- phyloseq_to_deseq2(adata_autsed, ~treatment)
+sedparam1 <- DESeq(animaldiff)
+resparam1 <- results(sedparam1)
+alpha = 0.05
+sigtab1 = resparam1[which(resparam1$padj < alpha), ]
+sigtab1 = cbind(as(sigtab1, "data.frame"), as(tax_table(adata_autsed)[rownames(sigtab1), ], "matrix"))
+head(sigtab1)
+write.table(sigtab1, "autsedanimaltaxa.txt", sep=",") #a table of all the significantly differentially expressed OTUs
+
+anres<-sigtab1[order(sigtab1$log2FoldChange),]
+auttaxa<-rownames(anres[anres$log2FoldChange< -5,])
+autt<-prune_taxa(auttaxa, adata_rar)
+adf$au<-sample_sums(autt)
+adf$auprop<-adf$au/adf$totalreads
+adf$aurich<-estimate_richness(autt)$Observed
+#in SED treatment group, is diversity of AUT-specific taxa 
+#negatively correlated with higher relative abundance 
+#of sediment-derived bacteria? 
+sed.au.rich<-ggplot(adf[adf$treatment=="SED",], aes(x=sedprop, y=aurich)) + 
+  geom_point(shape=20) + 
+  labs(x="Relative abundance of sediment-derived bacteria", y="Number of AUT-specific taxa present") +
+  annotate("text", x=.45, y=6.5, label="SED animals only")
+
+#...sort of
+
+#examining relationship between top 
+#sediment-specific OTU and richness of AUT animal-specific OTUs
+adf$o40<-abundances$OTU_40
+excl<-ggplot(adf[adf$treatment=="SED",], aes(x=o40, y=aurich)) + geom_point(shape=1, position=position_jitter(width=0, height=0.15)) +
+  theme_bw() + labs(x="Relative abundance of OTU_40", y="Number of AUT-specific taxa present") 
+
+ggplot(adf, aes(x=sedprop, y=aurich)) + geom_point() + stat_smooth(method=lm)
+
