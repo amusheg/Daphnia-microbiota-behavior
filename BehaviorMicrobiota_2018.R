@@ -110,35 +110,51 @@ summary<-ddply(adf, .(clone, clonerank, cloneavgbehavior, treatment), summarise,
 #order clones by increasing average behavior
 summary$clone<-factor(summary$clone, levels=c("TR-EG-1", "BE-OHZ-T10", "ES-DO1-1", "F2-82", "DE-K35-Mu10", "BE-WE-G59", "IXF1", "NO-V-7", "DE-KA-F28", "CZ-N2-6", "CZ-N1-1", "F2-918"))
 
-#alpha diversity measurements by clone and treatment
+#alpha diversity measurements by clone and treatment - boxplots
+#Figure 3
+clone_diversity_plot_shan_box<-ggplot(adf, aes(x=clone, y=Shannon, fill=treatment))+
+  theme_bw() + scale_y_continuous(limits=c(0,3.5)) + scale_fill_manual(values=c("gray","#E69F00","#56B4E9")) +
+  geom_point(position=position_jitterdodge(), shape=21, alpha=0.5)+
+  geom_boxplot(position=position_dodge(), outlier.size=0) +
+  geom_vline(xintercept=c(1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5), size=0.2) +
+  theme(axis.text.x=element_text(angle=90), 
+        legend.position=c(0.07,0.85), legend.title=element_blank(), 
+        legend.margin=margin(t = 0, unit='cm'),
+        legend.text=element_text(size=8)) + 
+  labs(y="Shannon Index")
+treatment_diversity_plot_shan_box<-ggplot(adf, aes(x=treatment, y=Shannon, color=treatment))+
+  theme_bw() + scale_y_continuous(limits=c(0,3)) + scale_color_manual(values=c("gray","#E69F00","#56B4E9")) +
+  geom_boxplot(position=position_dodge(), alpha=0) +
+  geom_point(position=position_jitterdodge())+
+  theme(axis.text.x=element_text(angle=90), legend.position=c(0.05,0.1)) + labs(y="Shannon Index +/- s.e.m.")
+
+#alpha diversity measurements by clone and treatment - mean +/- SEM
 clone_diversity_plot_simp<-ggplot(summary, aes(x=clone, y=InvSimp, color=treatment))+geom_point(stat="identity", position=position_dodge(width=0.9)) +
   theme_bw() + scale_y_continuous(limits=c(0,9)) + scale_color_manual(values=c("gray","#E69F00","#56B4E9")) +
   geom_errorbar(aes(ymin=(InvSimp-simp_se), ymax=(InvSimp+simp_se)), position=position_dodge(width=0.9)) + geom_vline(xintercept=c(1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5), size=0.2) +
-  theme(axis.text.x=element_text(angle=90), legend.position=c(0.05,0.1)) + labs(y="Simpson Index +/- s.e.m.")
+  theme(axis.text.x=element_text(angle=90), axis.title.y=element_text(size=8),
+        legend.position="right", 
+        legend.text=element_text(size=8), legend.title=element_blank(), 
+        legend.margin=margin(t = 0, unit='cm')) + 
+  labs(y="Simpson Index +/- s.e.m.")
 clone_diversity_plot_rrich<-ggplot(summary, aes(x=clone, y=rich, color=treatment))+geom_point(stat="identity", position=position_dodge(width=0.9)) +
   theme_bw() + scale_y_continuous(limits=c(0,25)) + scale_color_manual(values=c("gray","#E69F00","#56B4E9")) +
   geom_errorbar(aes(ymin=(rich-rich_se), ymax=(rich+rich_se)), position=position_dodge(width=0.9)) + geom_vline(xintercept=c(1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5), size=0.1) +
-  theme(axis.text.x=element_text(angle=90), legend.position=c(0.05,0.1)) + labs(y="Richness +/- s.e.m.")
-#Figure 3
+  theme(axis.text.x=element_text(angle=90), axis.title.y=element_text(size=8),
+        legend.position="right", 
+        legend.text=element_text(size=8), legend.title=element_blank(), 
+        legend.margin=margin(t = 0, unit='cm')) + 
+  labs(y="Richness +/- s.e.m.")
 clone_diversity_plot_shan<-ggplot(summary, aes(x=clone, y=Shan, color=treatment))+geom_point(stat="identity", position=position_dodge(width=0.9)) +
   theme_bw() + scale_y_continuous(limits=c(0,2.5)) + scale_color_manual(values=c("gray","#E69F00","#56B4E9")) +
   geom_errorbar(aes(ymin=(Shan-shan_se), ymax=(Shan+shan_se)), position=position_dodge(width=0.9)) + geom_vline(xintercept=c(1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5), size=0.1) +
-  theme(axis.text.x=element_text(angle=90), legend.position=c(0.07,0.15)) + labs(y="Shannon Index +/- s.e.m.")
+  theme(axis.text.x=element_text(angle=90), axis.title.y=element_text(size=8),
+        legend.position="right", 
+        legend.text=element_text(size=8), legend.title=element_blank(),
+        legend.margin=margin(t = 0, unit='cm')) + 
+  labs(y="Shannon Index +/- s.e.m.")
 #Figure S5
-clone_diversity_plot_supplement<-plot_grid(clone_diversity_plot_rrich, clone_diversity_plot_simp, labels=c("A","B"), nrow=2)
-
-#alpha diversity measurements by clone and treatment - boxplots
-clone_diversity_plot_shan_box<-ggplot(adf, aes(x=clone, y=Shannon, color=treatment))+geom_point(stat="identity", position=position_dodge(width=0.9)) +
-  theme_bw() + scale_y_continuous(limits=c(0,3)) + scale_color_manual(values=c("gray","#E69F00","#56B4E9")) +
-  geom_boxplot(position=position_dodge(), alpha=0) +
-  geom_point(position=position_jitterdodge())+
-  geom_vline(xintercept=c(1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5), size=0.2) +
-  theme(axis.text.x=element_text(angle=90), legend.position=c(0.05,0.1)) + labs(y="Shannon Index +/- s.e.m.")
-treatment_diversity_plot_shan_box<-ggplot(adf, aes(x=treatment, y=Shannon, color=treatment))+geom_point(stat="identity", position=position_dodge(width=0.9)) +
-  theme_bw() + scale_y_continuous(limits=c(0,3)) + scale_color_manual(values=c("gray","#E69F00","#56B4E9")) +
-  geom_boxplot(position=position_dodge(), alpha=0) +
-  geom_point(position=position_jitterdodge())+
-  theme(axis.text.x=element_text(angle=90), legend.position=c(0.05,0.1)) + labs(y="Shannon Index +/- s.e.m.")
+clone_diversity_plot_supplement<-plot_grid(clone_diversity_plot_rrich, clone_diversity_plot_simp, clone_diversity_plot_shan, labels=c("A","B","C"), nrow=3)
 
 #treatment, clone and size
 size_clntrt<-aov(size~clone*treatment, adf)
@@ -330,19 +346,22 @@ prop_sum<-ddply(adf, .(clone, clonerank, cloneavgbehavior, treatment), summarise
 prop_sum$clone<-factor(prop_sum$clone, levels=c("TR-EG-1", "BE-OHZ-T10", "ES-DO1-1", "F2-82", "DE-K35-Mu10", "BE-WE-G59", "IXF1", "NO-V-7", "DE-KA-F28", "CZ-N2-6", "CZ-N1-1", "F2-918"))
 
 #Fig 7
+prop_box<-ggplot(adf, aes(x=clone, y=sedprop, fill=treatment)) + 
+  scale_fill_manual(values=c("gray","#E69F00","#56B4E9")) + 
+  geom_boxplot(outlier.size=0) +
+  geom_point(position=position_jitterdodge(), shape=21, alpha=0.5) + 
+  theme_bw() +
+  theme(axis.text.x=element_text(angle=90), legend.position=c(0.1,0.8),
+        legend.title=element_blank()) + 
+  geom_vline(xintercept=c(1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5), size=0.1) +
+  labs(y="Proportion sediment-derived bacteria")
+
 prop_bar<-ggplot(prop_sum, aes(x=clone, y=proportion, fill=treatment)) + 
   geom_bar(stat="identity", position=position_dodge()) + theme_bw() +
   scale_fill_manual(values=c("gray","#E69F00","#56B4E9")) + geom_errorbar(aes(ymin=(proportion-proportion_se), ymax=(proportion+proportion_se)), position=position_dodge(width=0.9), width=0) +
   theme(axis.text.x=element_text(angle=90), legend.position=c(0.1,0.8)) + 
   labs(y="Proportion sediment-derived bacteria")
 
-prop_box<-ggplot(adf, aes(x=clone, y=sedprop, color=treatment)) + 
-  geom_point(position=position_jitterdodge()) + 
-  geom_boxplot(outlier.size=0, alpha=0) +
-  theme_bw() +
-  scale_color_manual(values=c("gray","#E69F00","#56B4E9")) + 
-  theme(axis.text.x=element_text(angle=90), legend.position=c(0.1,0.8)) + geom_vline(xintercept=c(1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5), size=0.1) +
-  labs(y="Proportion sediment-derived bacteria")
 
 p_batch<-aov(sedprop~extraction_day, adf) #no effect of batch on prop sed-derived bacteria
 prop_size<-lm(sedprop~cloneavgsize, adf) #no effect of size on prop. sed bacteria
@@ -399,15 +418,15 @@ prop_i<-ggplot(adf, aes(x=behavior, y=sedprop, color=treatment)) +
 
 #metacoder for creating taxonomic heat trees
 devtools::install_github("ropensci/taxa")
-devtools::install_github("grunwaldlab/metacoder/")
-library(metacoder) #0.2.0.9012 # https://github.com/grunwaldlab/metacoder
+devtools::install_github("grunwaldlab/metacoder")
+library(metacoder) #0.3.0.1 # https://github.com/grunwaldlab/metacoder
 obj<-parse_phyloseq(adata)
 
-obj$data$tax_abund <- calc_taxon_abund(obj, "otu_table")
+obj$data$otu_props <- calc_obs_props(obj, "otu_table")
+obj$data$tax_abund <- calc_taxon_abund(obj, "otu_props")
 obj$data$tax_occ <- calc_n_samples(obj, "tax_abund", groups = sample_data(adata)$treatment)
-obj$data$tax_props <- calc_obs_props(obj, "tax_abund")
 obj$data$diff_table <- compare_groups(obj, dataset = "tax_abund", cols=obj$sam_data$sample_ids, groups = sample_data(adata)$treatment)
-obj$data$medians<-calc_group_median(obj, dataset="tax_props", groups=sample_data(adata)$treatment)
+obj$data$medians<-calc_group_median(obj, dataset="tax_abund", groups=sample_data(adata)$treatment)
 
 #Show taxonomic trees with presence/absence and median relative abundance 
 #of taxa in each treatment
