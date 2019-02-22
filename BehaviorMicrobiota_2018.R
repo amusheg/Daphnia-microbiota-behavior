@@ -419,7 +419,7 @@ prop_i<-ggplot(adf, aes(x=behavior, y=sedprop, color=treatment)) +
 #metacoder for creating taxonomic heat trees
 devtools::install_github("ropensci/taxa")
 devtools::install_github("grunwaldlab/metacoder")
-library(metacoder) #0.3.0.1 # https://github.com/grunwaldlab/metacoder
+library(metacoder) #0.3.0.9006 # https://github.com/grunwaldlab/metacoder
 obj<-parse_phyloseq(adata)
 
 obj$data$otu_props <- calc_obs_props(obj, "otu_table")
